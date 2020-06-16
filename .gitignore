@@ -1,0 +1,5 @@
+/indigo_influx_receiver.egg-info/
+/.eggs/
+.idea/
+indigo_protobuf.egg-info/
+indigo_protobuf/__pycache__/
