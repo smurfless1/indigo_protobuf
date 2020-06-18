@@ -5,10 +5,11 @@ import arrow
 
 import betterproto
 from dateutil import tz
+from google.protobuf import json_format
 
-from indigo_protobuf_betterproto.indigo import IndigoUnknownMessage, HvacFields, DimmerSwitchFields, SecurityFields, GenericFields, \
+from indigo_protobuf.indigo_pb2 import IndigoUnknownMessage, HvacFields, DimmerSwitchFields, SecurityFields, GenericFields, \
     BinarySwitchFields
-from indigo_protobuf_betterproto.indigo_influx import InfluxEvent, InfluxFields, InfluxTag
+from indigo_protobuf.indigo_influx_pb2 import InfluxEvent, InfluxFields, InfluxTag
 
 
 FULL_ON = 100.0
@@ -16,7 +17,7 @@ FULL_OFF = 0.0
 
 
 def make_unknown_message(elt: dict) -> IndigoUnknownMessage:
-    msg = IndigoUnknownMessage().from_dict(value=elt)
+    msg = json_format.ParseDict(elt, IndigoUnknownMessage())
     if msg.measurement == "thermostat_changes":
         msg.hvac = HvacFields().from_dict(elt["fields"])
         msg.time = arrow.get(msg.hvac.last_successful_comm).datetime
