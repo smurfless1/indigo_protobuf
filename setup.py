@@ -16,6 +16,8 @@ setup(
     install_requires=[
         'arrow',
         'betterproto',
+        'grpcio',
+        'protobuf',
         'python-dateutil',
     ],
     extras_require={
