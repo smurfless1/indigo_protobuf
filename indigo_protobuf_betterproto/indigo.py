@@ -868,16 +868,19 @@ class IndigoUnknownMessage(betterproto.Message):
 
 @dataclass
 class SubscribeArgs(betterproto.Message):
-    pass
+    multicast_port: int = betterproto.uint32_field(1)
 
 
 class TranslatorStub(betterproto.ServiceStub):
     """A service that translates raw JSON messages to the above structures"""
 
-    async def subscribe(self) -> AsyncGenerator[IndigoUnknownMessage, None]:
+    async def subscribe(
+        self, *, multicast_port: int = 0
+    ) -> AsyncGenerator[IndigoUnknownMessage, None]:
         """Subscribe to ongoing message updates"""
 
         request = SubscribeArgs()
+        request.multicast_port = multicast_port
 
         async for response in self._unary_stream(
             "/indigo.Translator/Subscribe", request, IndigoUnknownMessage,

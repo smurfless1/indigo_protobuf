@@ -340,7 +340,9 @@ message IndigoUnknownMessage {
 
 // Jun 3rd week
 
-message SubscribeArgs {}
+message SubscribeArgs {
+    uint32 multicast_port = 1;
+}
 
 // A service that translates raw JSON messages to the above structures
 service Translator {

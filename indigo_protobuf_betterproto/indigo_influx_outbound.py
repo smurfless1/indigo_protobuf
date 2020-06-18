@@ -6,8 +6,9 @@ import arrow
 import betterproto
 from dateutil import tz
 
-from indigo_protobuf.indigo import IndigoUnknownMessage, HvacFields, DimmerSwitchFields, SecurityFields, GenericFields, \
-    BinarySwitchFields, InfluxEvent, InfluxFields, InfluxTag
+from indigo_protobuf.indigo_pb2 import IndigoUnknownMessage, HvacFields, DimmerSwitchFields, SecurityFields, GenericFields, \
+    BinarySwitchFields
+from indigo_protobuf.indigo_influx_pb2 import InfluxEvent, InfluxFields, InfluxTag
 
 
 FULL_ON = 100.0
