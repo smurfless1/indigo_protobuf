@@ -138,7 +138,7 @@ class InfluxOutbound:
         failcauses = [
             self.name == "generic",
             self.val is None,
-            not hasattr(self.val, "last_successful_comm"),
+            not hasattr(self.val, "lastSuccessfulComm"),
             all([v is None for v in self.influx_values]),
         ]
         return False if any(failcauses) else True
