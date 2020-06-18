@@ -3,7 +3,7 @@ from typing import Optional, List
 
 import arrow
 
-import betterproto
+from google.protobuf.timestamp_pb2 import Timestamp
 from dateutil import tz
 from google.protobuf import json_format
 
@@ -17,30 +17,32 @@ FULL_OFF = 0.0
 
 
 def make_unknown_message(elt: dict) -> IndigoUnknownMessage:
-    msg = json_format.ParseDict(elt, IndigoUnknownMessage())
-    if msg.measurement == "thermostat_changes":
-        msg.hvac = HvacFields().from_dict(elt["fields"])
-        msg.time = arrow.get(msg.hvac.last_successful_comm).datetime
-    elif msg.measurement == "device_changes":
+    msg = json_format.ParseDict(elt, IndigoUnknownMessage(), ignore_unknown_fields=True)
+    if msg.measurement.value == "thermostat_changes":
+        msg.hvac.CopyFrom(json_format.ParseDict(elt["fields"], HvacFields(), ignore_unknown_fields=True))
+        msg.time.FromDatetime(dt=arrow.get(msg.hvac.lastSuccessfulComm.value).datetime)
+    elif msg.measurement.value == "device_changes":
         if "displayStateId" not in elt["fields"].keys():
-            msg.generic = GenericFields().from_dict(elt["fields"])
-            msg.time = arrow.get(msg.generic.last_successful_comm).datetime
+            msg.generic.CopyFrom(json_format.ParseDict(elt["fields"], GenericFields(), ignore_unknown_fields=True))
+            msg.time.FromDatetime(dt=arrow.get(msg.generic.lastSuccessfulComm.value).datetime)
             # print("Did not find displayStateId in:")
             # print(elt["fields"].keys())
             # print("Using generic update fields.")
         elif elt["fields"]["displayStateId"] == "onOffState":
-            msg.binary = BinarySwitchFields().from_dict(elt["fields"])
-            msg.time = arrow.get(msg.binary.last_successful_comm).datetime
+            msg.binary.CopyFrom(json_format.ParseDict(elt["fields"], BinarySwitchFields(), ignore_unknown_fields=True))
+            msg.time.FromDatetime(dt=arrow.get(msg.binary.lastSuccessfulComm.value).datetime)
         elif elt["fields"]["displayStateId"] == "brightnessLevel":
-            msg.dimmer = DimmerSwitchFields().from_dict(elt["fields"])
-            msg.time = arrow.get(msg.dimmer.last_successful_comm).datetime
+            msg.dimmer.CopyFrom(json_format.ParseDict(elt["fields"], DimmerSwitchFields(), ignore_unknown_fields=True))
+            msg.time.FromDatetime(dt=arrow.get(msg.dimmer.lastSuccessfulComm.value).datetime)
         elif elt["fields"]["displayStateId"] == "state":
-            msg.security = SecurityFields().from_dict(elt["fields"])
-            msg.time = arrow.get(msg.security.last_successful_comm).datetime
+            msg.security.CopyFrom(json_format.ParseDict(elt["fields"], SecurityFields(), ignore_unknown_fields=True))
+            msg.time.FromDatetime(dt=arrow.get(msg.security.lastSuccessfulComm.value).datetime)
+    else:
+        print(f"what is this? {elt}")
 
     # thou shalt have a TIME!
     if msg.time is None:
-        msg.time = arrow.get().datetime
+        msg.time = Timestamp().FromDatetime(dt=arrow.get().datetime)
 
     return msg
 
@@ -48,7 +50,14 @@ def make_unknown_message(elt: dict) -> IndigoUnknownMessage:
 class InfluxOutbound:
     def __init__(self, msg: IndigoUnknownMessage):
         self.message: IndigoUnknownMessage = msg
-        self.name, self.val = betterproto.which_one_of(self.message, "fields")
+        self.name = msg.WhichOneof("fields")
+        self.val = None
+        if not self.name or self.name == "":
+            return
+        try:
+            self.val = getattr(msg, self.name)
+        except (TypeError, AttributeError) as ae:
+            print("SHIT!")
 
     @property
     def time(self) -> datetime.datetime:
@@ -64,11 +73,11 @@ class InfluxOutbound:
     def on(self) -> Optional[float]:
         if self.name == "" or self.name == "generic":
             return None
-        elif self.name == "binary" and self.val.on_state:
+        elif self.name == "binary" and self.val.onState.value:
             return True
-        elif self.name == "dimmer" and self.val.brightness != 0.0:
+        elif self.name == "dimmer" and self.val.brightness.value != 0.0:
             return True
-        elif self.name == "hvac" and (self.val.cool_is_on or self.val.heat_is_on):
+        elif self.name == "hvac" and (self.val.coolIsOn.value or self.val.heatIsOn.value):
             return True
         elif self.name == "security":  # and self.val.state_state_tripped:
             return None
@@ -79,11 +88,11 @@ class InfluxOutbound:
     def brightness(self) -> Optional[float]:
         if self.name == "" or self.name == "generic":
             return None
-        elif self.name == "binary" and self.val.on_state:
+        elif self.name == "binary" and self.val.onState.value:
             return FULL_ON
         elif self.name == "dimmer":
-            return self.val.brightness
-        elif self.name == "hvac" and (self.val.cool_is_on or self.val.heat_is_on):
+            return self.val.brightness.value
+        elif self.name == "hvac" and (self.val.coolIsOn.value or self.val.heatIsOn.value):
             return FULL_ON
         elif self.name == "security": #  and self.val.state_state_tripped:
             return None
@@ -92,19 +101,19 @@ class InfluxOutbound:
 
     @property
     def cool(self) -> Optional[float]:
-        return self.val.cool_setpoint if self.name == "hvac" else None
+        return self.val.coolSetpoint.value if self.name == "hvac" else None
 
     @property
     def heat(self) -> Optional[float]:
-        return self.val.heat_setpoint if self.name == "hvac" else None
+        return self.val.heatSetpoint.value if self.name == "hvac" else None
 
     @property
     def temperature(self) -> Optional[float]:
-        return self.val.state_temperature_input1 if self.name == "hvac" else None
+        return self.val.state_temperatureInput1.value if self.name == "hvac" else None
 
     @property
     def humidity(self) -> Optional[float]:
-        return self.val.state_humidity_input1 if self.name == "hvac" else None
+        return self.val.state_humidityInput1.value if self.name == "hvac" else None
 
     @property
     def influx_values(self) -> List:
@@ -113,10 +122,10 @@ class InfluxOutbound:
     @property
     def event(self) -> InfluxEvent:
         return InfluxEvent(
-            measurement=self.message.measurement,
-            time=self.time,
-            tags=InfluxTag(name=self.message.tags.name, folder=self.message.tags.folder),
-            fields=InfluxFields(on=self.on, brightness=self.brightness, cool_setpoint=self.cool, heat_setpoint=self.heat,
+            measurement=self.message.measurement.value,
+            time=self.time.value,
+            tags=InfluxTag(name=self.message.tags.name.value, folder=self.message.tags.folder.value),
+            fields=InfluxFields(on=self.on, brightness=self.brightness, coolSetpoint=self.cool, heatSetpoint=self.heat,
                                 humidity=self.humidity, temperature=self.temperature)
         )
 
