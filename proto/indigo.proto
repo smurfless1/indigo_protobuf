@@ -2,6 +2,10 @@ syntax = "proto3";
 // import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+option go_package = "smurfless.com/grpc/indigo";
+// option java_multiple_files = "indigo";
+option java_package = "smurfless.com/grpc/indigo";
+option java_outer_classname = "IndigoGrpc";
 
 package indigo;
 
@@ -332,4 +336,14 @@ message IndigoUnknownMessage {
         SecurityFields security = 14;
         GenericFields generic = 15;
     }
+}
+
+// Jun 3rd week
+
+message SubscribeArgs {}
+
+// A service that translates raw JSON messages to the above structures
+service Translator {
+    // Subscribe to ongoing message updates
+    rpc Subscribe(SubscribeArgs) returns (stream IndigoUnknownMessage) {};
 }

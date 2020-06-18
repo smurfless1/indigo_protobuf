@@ -3,50 +3,15 @@
 # plugin: python-betterproto
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import AsyncGenerator, Optional
 
 import betterproto
-
-
-@dataclass
-class InfluxTag(betterproto.Message):
-    name: Optional[str] = betterproto.message_field(1, wraps=betterproto.TYPE_STRING)
-    folder: Optional[str] = betterproto.message_field(2, wraps=betterproto.TYPE_STRING)
-
-
-@dataclass
-class InfluxEvent(betterproto.Message):
-    measurement: Optional[str] = betterproto.message_field(
-        1, wraps=betterproto.TYPE_STRING
-    )
-    time: datetime = betterproto.message_field(2)
-    tags: "InfluxTag" = betterproto.message_field(3)
-    fields: "InfluxFields" = betterproto.message_field(4)
+import grpclib
 
 
 @dataclass
 class DeviceChange(betterproto.Message):
     name: Optional[str] = betterproto.message_field(1, wraps=betterproto.TYPE_STRING)
-
-
-@dataclass
-class InfluxFields(betterproto.Message):
-    on: Optional[bool] = betterproto.message_field(1, wraps=betterproto.TYPE_BOOL)
-    brightness: Optional[float] = betterproto.message_field(
-        11, wraps=betterproto.TYPE_FLOAT
-    )
-    cool_setpoint: Optional[float] = betterproto.message_field(
-        20, wraps=betterproto.TYPE_FLOAT
-    )
-    heat_setpoint: Optional[float] = betterproto.message_field(
-        21, wraps=betterproto.TYPE_FLOAT
-    )
-    temperature: Optional[float] = betterproto.message_field(
-        22, wraps=betterproto.TYPE_FLOAT
-    )
-    humidity: Optional[float] = betterproto.message_field(
-        23, wraps=betterproto.TYPE_FLOAT
-    )
 
 
 @dataclass
@@ -899,3 +864,22 @@ class IndigoUnknownMessage(betterproto.Message):
     hvac: "HvacFields" = betterproto.message_field(13, group="fields")
     security: "SecurityFields" = betterproto.message_field(14, group="fields")
     generic: "GenericFields" = betterproto.message_field(15, group="fields")
+
+
+@dataclass
+class SubscribeArgs(betterproto.Message):
+    pass
+
+
+class TranslatorStub(betterproto.ServiceStub):
+    """A service that translates raw JSON messages to the above structures"""
+
+    async def subscribe(self) -> AsyncGenerator[IndigoUnknownMessage, None]:
+        """Subscribe to ongoing message updates"""
+
+        request = SubscribeArgs()
+
+        async for response in self._unary_stream(
+            "/indigo.Translator/Subscribe", request, IndigoUnknownMessage,
+        ):
+            yield response

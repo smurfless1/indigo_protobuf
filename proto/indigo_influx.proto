@@ -2,6 +2,10 @@ syntax = "proto3";
 // import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+option go_package = "smurfless.com/grpc/indigoinflux";
+// option java_multiple_files = "indigoinflux";
+option java_package = "smurfless.com/grpc/indigoinflux";
+option java_outer_classname = "IndigoInfluxGrpc";
 
 package indigo_influx;
 
