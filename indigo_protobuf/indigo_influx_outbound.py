@@ -61,7 +61,7 @@ class InfluxOutbound:
 
     @property
     def time(self) -> datetime.datetime:
-        return arrow.get(getattr(self.val, "last_successful_comm")).replace(tzinfo=tz.tzlocal()).datetime
+        return arrow.get(getattr(self.val, "lastSuccessfulComm")).replace(tzinfo=tz.tzlocal()).datetime
 
     @property
     def fields(self) -> dict:
