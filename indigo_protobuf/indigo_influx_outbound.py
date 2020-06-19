@@ -123,7 +123,7 @@ class InfluxOutbound:
     def event(self) -> InfluxEvent:
         return InfluxEvent(
             measurement=self.message.measurement.value,
-            time=self.time.value,
+            time=self.time,
             tags=InfluxTag(name=self.message.tags.name.value, folder=self.message.tags.folder.value),
             fields=InfluxFields(on=self.on, brightness=self.brightness, coolSetpoint=self.cool, heatSetpoint=self.heat,
                                 humidity=self.humidity, temperature=self.temperature)
