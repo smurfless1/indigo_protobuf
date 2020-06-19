@@ -3,9 +3,10 @@
 # plugin: python-betterproto
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import AsyncGenerator, Optional
 
 import betterproto
+import grpclib
 
 
 @dataclass
@@ -42,3 +43,21 @@ class InfluxFields(betterproto.Message):
     humidity: Optional[float] = betterproto.message_field(
         23, wraps=betterproto.TYPE_FLOAT
     )
+
+
+@dataclass
+class SubscribeArgs(betterproto.Message):
+    multicast_port: int = betterproto.uint32_field(1)
+
+
+class InfluxTranslatorStub(betterproto.ServiceStub):
+    async def influx_subscribe(
+        self, *, multicast_port: int = 0
+    ) -> AsyncGenerator[InfluxEvent, None]:
+        request = SubscribeArgs()
+        request.multicast_port = multicast_port
+
+        async for response in self._unary_stream(
+            "/indigo_influx.InfluxTranslator/InfluxSubscribe", request, InfluxEvent,
+        ):
+            yield response

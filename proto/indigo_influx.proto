@@ -29,3 +29,11 @@ message InfluxFields {
     google.protobuf.FloatValue temperature = 22;
     google.protobuf.FloatValue humidity = 23;
 }
+
+message SubscribeArgs {
+    uint32 multicast_port = 1;
+}
+
+service InfluxTranslator {
+    rpc InfluxSubscribe(SubscribeArgs) returns (stream InfluxEvent) {};
+}
