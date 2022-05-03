@@ -29,6 +29,11 @@ python -m grpc_tools.protoc --python_out=. --grpc_python_out=. -I "${TMPDIR}" "$
 python -m grpc_tools.protoc --python_out=. --grpc_python_out=. -I "${TMPDIR}" "${TMPDIR}/${TARGET}/indigo_influx.proto"
 protoc -I . --python_betterproto_out=indigo_protobuf_betterproto proto/indigo.proto
 protoc -I . --python_betterproto_out=indigo_protobuf_betterproto proto/indigo_influx.proto
+protoc --plugin=protoc-gen-custom=betterproto/plugin.py \
+    --custom_opt=INCLUDE_GOOGLE \
+    --custom_out=betterproto/lib \
+    -I /usr/local/include/ \
+    /usr/local/include/google/protobuf/*.proto
 protoc -I . proto/indigo.proto --go_out=plugins=grpc:.
 protoc -I . proto/indigo_influx.proto --go_out=plugins=grpc:.
 

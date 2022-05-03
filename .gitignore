@@ -3,3 +3,5 @@
 .idea/
 indigo_protobuf.egg-info/
 indigo_protobuf/__pycache__/
+.DS_Store
+__pycache__/

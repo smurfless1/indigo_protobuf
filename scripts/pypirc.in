@@ -1,0 +1,14 @@
+[distutils]
+index-servers=
+    test
+    prod
+
+[test]
+repository = https://test.pypi.org/legacy/
+username = __token__
+password = %%TEST_API_KEY%%
+
+[prod]
+repository = https://upload.pypi.org/legacy/
+username = __token__
+password = %%PROD_API_KEY%%
